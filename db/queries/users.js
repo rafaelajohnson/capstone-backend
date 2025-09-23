@@ -1,43 +1,36 @@
+// queries related to users table
 import db from "#db/client";
 import bcrypt from "bcrypt";
 
-export async function createUser(username, password) {
-  const sql = `
-  INSERT INTO users
-    (username, password)
-  VALUES
-    ($1, $2)
-  RETURNING *
-  `;
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const {
-    rows: [user],
-  } = await db.query(sql, [username, hashedPassword]);
-  return user;
-}
-
+// find user by username + check password
+// used when someone logs in
 export async function getUserByUsernameAndPassword(username, password) {
   const sql = `
-  SELECT *
-  FROM users
-  WHERE username = $1
+    SELECT *
+    FROM users
+    WHERE username = $1
   `;
   const {
     rows: [user],
   } = await db.query(sql, [username]);
+
+  // if user not found
   if (!user) return null;
 
+  // check hashed password
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) return null;
 
-  return user;
+  return user; // good login
 }
 
+// get a user by ID
+// used when we decode a token and need user info
 export async function getUserById(id) {
   const sql = `
-  SELECT *
-  FROM users
-  WHERE id = $1
+    SELECT *
+    FROM users
+    WHERE id = $1
   `;
   const {
     rows: [user],
