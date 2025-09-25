@@ -1,28 +1,46 @@
-import express from "express";
-const router = express.Router();
-export default router;
-
+import { Router } from "express";
+import bcrypt from "bcrypt";
+import jwt from "#utils/jwt";
 import { createUser, getUserByUsernameAndPassword } from "#db/queries/users";
-import requireBody from "#middleware/requireBody";
-import { createToken } from "#utils/jwt";
 
-router
-  .route("/register")
-  .post(requireBody(["username", "password"]), async (req, res) => {
+const router = Router();
+
+// signup route
+router.post("/signup", async (req, res, next) => {
+  try {
     const { username, password } = req.body;
-    const user = await createUser(username, password);
+    if (!username || !password) {
+      return res.status(400).json({ error: "username and password required" });
+    }
 
-    const token = await createToken({ id: user.id });
-    res.status(201).send(token);
-  });
+    // hash password before storing
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await createUser(username, hashed);
 
-router
-  .route("/login")
-  .post(requireBody(["username", "password"]), async (req, res) => {
+    // make a token
+    const token = jwt.sign({ id: user.id });
+    res.json({ token, user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// login route
+router.post("/login", async (req, res, next) => {
+  try {
     const { username, password } = req.body;
     const user = await getUserByUsernameAndPassword(username, password);
-    if (!user) return res.status(401).send("Invalid username or password.");
 
-    const token = await createToken({ id: user.id });
-    res.send(token);
-  });
+    if (!user) {
+      return res.status(401).json({ error: "invalid login" });
+    }
+
+    // make a token
+    const token = jwt.sign({ id: user.id });
+    res.json({ token, user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
