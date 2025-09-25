@@ -1,28 +1,23 @@
 import express from "express";
+import usersRoutes from "./api/users.js";
+import storiesRoutes from "./api/stories.js";
+import pagesRoutes from "./api/pages.js";
+import optionsRoutes from "./api/options.js";
+
 const app = express();
-export default app;
 
-import usersRouter from "#api/users";
-import getUserFromToken from "#middleware/getUserFromToken";
-import handlePostgresErrors from "#middleware/handlePostgresErrors";
-import cors from "cors";
-import morgan from "morgan";
-
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? /localhost/ }));
-
-app.use(morgan("dev"));
-
+// parse JSON bodies
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-app.use(getUserFromToken);
+// mount routes
+app.use("/auth", usersRoutes);     // signup + login
+app.use("/stories", storiesRoutes); // save + get stories
+app.use("/pages", pagesRoutes);     // get page + options
+app.use("/options", optionsRoutes); // add/fetch options
 
-app.get("/", (req, res) => res.send("Hello, World!"));
-
-app.use("/users", usersRouter);
-
-app.use(handlePostgresErrors);
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).send("Sorry! Something went wrong.");
+// basic health check
+app.get("/", (req, res) => {
+  res.send("API is running");
 });
+
+export default app;
