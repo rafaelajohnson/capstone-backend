@@ -1,45 +1,44 @@
+// api/users.js
 import { Router } from "express";
-import bcrypt from "bcrypt";
-import jwt from "#utils/jwt";
-import { createUser, getUserByUsernameAndPassword } from "#db/queries/users";
+import { createUser, authenticateUser } from "#db/queries/users";
 
 const router = Router();
 
-// signup route
-router.post("/signup", async (req, res, next) => {
+// Signup route
+router.post("/signup", async (req, res) => {
   try {
     const { username, password } = req.body;
+
     if (!username || !password) {
-      return res.status(400).json({ error: "username and password required" });
+      return res.status(400).json({ error: "Username and password required" });
     }
 
-    // hash password before storing
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await createUser(username, hashed);
-
-    // make a token
-    const token = jwt.sign({ id: user.id });
-    res.json({ token, user });
+    const user = await createUser(username, password);
+    res.status(201).json(user);
   } catch (err) {
-    next(err);
+    console.error("❌ Signup error:", err);
+    res.status(500).json({ error: "Failed to create user" });
   }
 });
 
-// login route
-router.post("/login", async (req, res, next) => {
+// Login route
+router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await getUserByUsernameAndPassword(username, password);
 
-    if (!user) {
-      return res.status(401).json({ error: "invalid login" });
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password required" });
     }
 
-    // make a token
-    const token = jwt.sign({ id: user.id });
-    res.json({ token, user });
+    const user = await authenticateUser(username, password);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    res.json(user);
   } catch (err) {
-    next(err);
+    console.error("❌ Login error:", err);
+    res.status(500).json({ error: "Login failed" });
   }
 });
 
