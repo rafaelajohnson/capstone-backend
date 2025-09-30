@@ -16,7 +16,8 @@ export async function createUser(username, password) {
     rows: [user],
   } = await db.query(sql, [username, hashedPassword]);
 
-  return user;
+  // return safe object (no password field)
+  return { id: user.id, username: user.username };
 }
 
 // Authenticate user (login check)
@@ -36,7 +37,8 @@ export async function authenticateUser(username, password) {
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) return null;
 
-  return user;
+  // return safe object (no password field)
+  return { id: user.id, username: user.username };
 }
 
 // Get a user by id
@@ -53,4 +55,3 @@ export async function getUserById(id) {
 
   return user;
 }
-

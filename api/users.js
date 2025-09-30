@@ -14,7 +14,7 @@ router.post("/signup", async (req, res) => {
     }
 
     const user = await createUser(username, password);
-    res.status(201).json(user);
+    res.status(201).json(user); // returns {id, username}
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).json({ error: "Failed to create user" });
@@ -35,7 +35,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid username or password" });
     }
 
-    res.json(user);
+    res.json(user); // returns {id, username}
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ error: "Login failed" });
