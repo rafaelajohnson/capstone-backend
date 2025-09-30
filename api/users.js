@@ -1,55 +1,47 @@
-// api/users.js
 import { Router } from "express";
 import { createUser, authenticateUser } from "#db/queries/users";
 import { createToken } from "#utils/jwt";
+import requireBody from "#middleware/requireBody"; //import middleware
 
 const router = Router();
 
 // Signup route
-router.post("/signup", async (req, res) => {
-  try {
-    const { username, password } = req.body;
+router.post(
+  "/signup",
+  requireBody(["username", "password"]), // this replaces manual check
+  async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      const user = await createUser(username, password);
 
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password required" });
+      const token = createToken({ id: user.id });
+      res.status(201).json({ user, token });
+    } catch (err) {
+      console.error("Signup error:", err);
+      res.status(500).json({ error: "Failed to create user" });
     }
-
-    const user = await createUser(username, password);
-
-    // make a token for the new user
-    const token = createToken({ id: user.id });
-
-    // return safe user + token
-    res.status(201).json({ user, token });
-  } catch (err) {
-    console.error("Signup error:", err);
-    res.status(500).json({ error: "Failed to create user" });
   }
-});
+);
 
 // Login route
-router.post("/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
+router.post(
+  "/login",
+  requireBody(["username", "password"]), // this replaces manual check too
+  async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      const user = await authenticateUser(username, password);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
 
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password required" });
+      const token = createToken({ id: user.id });
+      res.json({ user, token });
+    } catch (err) {
+      console.error("Login error:", err);
+      res.status(500).json({ error: "Login failed" });
     }
-
-    const user = await authenticateUser(username, password);
-    if (!user) {
-      return res.status(401).json({ error: "Invalid username or password" });
-    }
-
-    // make a token for the logged-in user
-    const token = createToken({ id: user.id });
-
-    // return safe user + token
-    res.json({ user, token });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ error: "Login failed" });
   }
-});
+);
 
 export default router;
