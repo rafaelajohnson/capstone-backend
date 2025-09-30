@@ -3,6 +3,7 @@ import usersRoutes from "./api/users.js";
 import storiesRoutes from "./api/stories.js";
 import pagesRoutes from "./api/pages.js";
 import optionsRoutes from "./api/options.js";
+import handlePostgresErrors from "./middleware/handlePostgresErrors.js";
 
 const app = express();
 
@@ -19,5 +20,7 @@ app.use("/options", optionsRoutes); // add/fetch options
 app.get("/", (req, res) => {
   res.send("API is running");
 });
+
+app.use(handlePostgresErrors); // add the error handling middleware
 
 export default app;
