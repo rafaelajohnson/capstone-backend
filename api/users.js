@@ -1,7 +1,7 @@
 // api/users.js
 import { Router } from "express";
 import { createUser, authenticateUser } from "#db/queries/users";
-import { createToken } from "#utils/jwt.js";
+import { createToken } from "#utils/jwt";
 
 const router = Router();
 
