@@ -1,78 +1,64 @@
-// api/options.js
+
 import { Router } from "express";
-import requireUser from "#middleware/requireUser";
-import requireBody from "#middleware/requireBody";
 import {
-  getOptionsByPage,
   createOption,
+  getOptionsByPage,
   updateOption,
   deleteOption,
 } from "#db/queries/options";
+import requireUser from "#middleware/requireUser";
+import requireBody from "#middleware/requireBody";
 
 const router = Router();
 
-// get all options for a page
-router.get("/:pageId", requireUser, async (req, res) => {
+// get options for a page
+router.get("/:pageId", requireUser, async (req, res, next) => {
   try {
     const options = await getOptionsByPage(req.params.pageId);
     res.json(options);
   } catch (err) {
-    console.error("Error fetching options:", err);
-    res.status(500).json({ error: "Failed to fetch options" });
+    next(err);
   }
 });
 
-// create new option (limit 3 per page)
-router.post(
-  "/",
-  requireUser,
-  requireBody(["pageId", "optionText"]),
-  async (req, res) => {
-    try {
-      const { pageId, optionText } = req.body;
-
-      const existing = await getOptionsByPage(pageId);
-      if (existing.length >= 3) {
-        return res.status(400).json({ error: "Max 3 options per page" });
-      }
-
-      const option = await createOption(pageId, optionText);
-      res.status(201).json(option);
-    } catch (err) {
-      console.error("Error creating option:", err);
-      res.status(500).json({ error: "Failed to create option" });
+// add a new option (limit 3 per page)
+router.post("/", requireUser, async (req, res, next) => {
+  try {
+    const { pageId, optionText } = req.body;
+    if (!pageId || !optionText) {
+      return res.status(400).json({ error: "pageId and optionText required" });
     }
+
+    const options = await getOptionsByPage(pageId);
+    if (options.length >= 3) {
+      return res.status(400).json({ error: "Max 3 options per page" });
+    }
+
+    const option = await createOption(pageId, optionText);
+    res.status(201).json(option);
+  } catch (err) {
+    next(err);
   }
-);
+});
 
 // update option text
-router.put(
-  "/:id",
-  requireUser,
-  requireBody(["optionText"]),
-  async (req, res) => {
-    try {
-      const option = await updateOption(req.params.id, req.body.optionText);
-      if (!option) return res.status(404).json({ error: "Option not found" });
-
-      res.json(option);
-    } catch (err) {
-      console.error("Error updating option:", err);
-      res.status(500).json({ error: "Failed to update option" });
-    }
+router.put("/:id", requireUser, async (req, res, next) => {
+  try {
+    const { optionText } = req.body;
+    const option = await updateOption(req.params.id, optionText);
+    res.json(option);
+  } catch (err) {
+    next(err);
   }
-);
+});
 
 // delete option
-router.delete("/:id", requireUser, async (req, res) => {
+router.delete("/:id", requireUser, async (req, res, next) => {
   try {
-    const option = await deleteOption(req.params.id);
-    if (!option) return res.status(404).json({ error: "Option not found" });
-
-    res.json({ message: "Option deleted", option });
+    await deleteOption(req.params.id);
+    res.json({ message: "Option deleted" });
   } catch (err) {
-    console.error("Error deleting option:", err);
-    res.status(500).json({ error: "Failed to delete option" });
+    next(err);
   }
 });
 
