@@ -1,3 +1,4 @@
+// db/queries/pages.js
 import db from "#db/client";
 
 // get all pages for a story
@@ -9,7 +10,7 @@ export async function getPagesByStory(storyId) {
   return result.rows;
 }
 
-// get single page
+// get one page (with text)
 export async function getPageById(pageId) {
   const result = await db.query(
     `SELECT * FROM pages WHERE id = $1`,
@@ -18,7 +19,7 @@ export async function getPageById(pageId) {
   return result.rows[0];
 }
 
-// create new page
+// make a new page
 export async function createPage(storyId, pageNumber, text) {
   const result = await db.query(
     `INSERT INTO pages (story_id, page_number, text) 
@@ -28,16 +29,14 @@ export async function createPage(storyId, pageNumber, text) {
   return result.rows[0];
 }
 
-// update page text or number
-export async function updatePage(pageId, fields) {
-  const { page_number, text } = fields;
+// update page text/number
+export async function updatePage(pageId, text, pageNumber) {
   const result = await db.query(
     `UPDATE pages
-     SET page_number = COALESCE($1, page_number),
-         text = COALESCE($2, text)
+     SET text = $1, page_number = $2
      WHERE id = $3
      RETURNING *`,
-    [page_number, text, pageId]
+    [text, pageNumber, pageId]
   );
   return result.rows[0];
 }
@@ -45,7 +44,9 @@ export async function updatePage(pageId, fields) {
 // delete page
 export async function deletePage(pageId) {
   const result = await db.query(
-    `DELETE FROM pages WHERE id = $1 RETURNING *`,
+    `DELETE FROM pages
+     WHERE id = $1
+     RETURNING *`,
     [pageId]
   );
   return result.rows[0];

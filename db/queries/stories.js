@@ -1,3 +1,4 @@
+// db/queries/stories.js
 import db from "#db/client";
 
 // get all stories for a user
@@ -9,7 +10,7 @@ export async function getStoriesByUser(userId) {
   return result.rows;
 }
 
-// get one story
+// get one story with its pages
 export async function getStoryById(storyId) {
   const result = await db.query(
     `SELECT * FROM stories WHERE id = $1`,
@@ -18,7 +19,7 @@ export async function getStoryById(storyId) {
   return result.rows[0];
 }
 
-// create new story
+// make a new story
 export async function createStory(userId, title, topic) {
   const result = await db.query(
     `INSERT INTO stories (user_id, title, topic) 
@@ -28,26 +29,25 @@ export async function createStory(userId, title, topic) {
   return result.rows[0];
 }
 
-// update story (title/topic only)
-export async function updateStory(storyId, userId, fields) {
-  const { title, topic } = fields;
+// update story if user owns it
+export async function updateStory(storyId, userId, title, topic) {
   const result = await db.query(
     `UPDATE stories
-     SET title = COALESCE($1, title),
-         topic = COALESCE($2, topic)
+     SET title = $1, topic = $2
      WHERE id = $3 AND user_id = $4
      RETURNING *`,
     [title, topic, storyId, userId]
   );
-  return result.rows[0];
+  return result.rows[0]; // null if not found or not owned
 }
 
-// delete story if owned by user
+// delete story if user owns it
 export async function deleteStory(storyId, userId) {
   const result = await db.query(
-    `DELETE FROM stories WHERE id = $1 AND user_id = $2 RETURNING *`,
+    `DELETE FROM stories 
+     WHERE id = $1 AND user_id = $2
+     RETURNING *`,
     [storyId, userId]
   );
-  return result.rows[0];
+  return result.rows[0]; // null if not found or not owned
 }
-
