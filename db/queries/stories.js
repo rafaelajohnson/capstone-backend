@@ -9,7 +9,7 @@ export async function getStoriesByUser(userId) {
   return result.rows;
 }
 
-// get one story with its pages
+// get one story
 export async function getStoryById(storyId) {
   const result = await db.query(
     `SELECT * FROM stories WHERE id = $1`,
@@ -18,7 +18,7 @@ export async function getStoryById(storyId) {
   return result.rows[0];
 }
 
-// make a new story
+// create new story
 export async function createStory(userId, title, topic) {
   const result = await db.query(
     `INSERT INTO stories (user_id, title, topic) 
@@ -28,10 +28,26 @@ export async function createStory(userId, title, topic) {
   return result.rows[0];
 }
 
-// delete story if user owns it
+// update story (title/topic only)
+export async function updateStory(storyId, userId, fields) {
+  const { title, topic } = fields;
+  const result = await db.query(
+    `UPDATE stories
+     SET title = COALESCE($1, title),
+         topic = COALESCE($2, topic)
+     WHERE id = $3 AND user_id = $4
+     RETURNING *`,
+    [title, topic, storyId, userId]
+  );
+  return result.rows[0];
+}
+
+// delete story if owned by user
 export async function deleteStory(storyId, userId) {
-  await db.query(
-    `DELETE FROM stories WHERE id = $1 AND user_id = $2`,
+  const result = await db.query(
+    `DELETE FROM stories WHERE id = $1 AND user_id = $2 RETURNING *`,
     [storyId, userId]
   );
+  return result.rows[0];
 }
+

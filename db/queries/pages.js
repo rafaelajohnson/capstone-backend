@@ -9,7 +9,7 @@ export async function getPagesByStory(storyId) {
   return result.rows;
 }
 
-// get one page (with text)
+// get single page
 export async function getPageById(pageId) {
   const result = await db.query(
     `SELECT * FROM pages WHERE id = $1`,
@@ -18,12 +18,35 @@ export async function getPageById(pageId) {
   return result.rows[0];
 }
 
-// make a new page
+// create new page
 export async function createPage(storyId, pageNumber, text) {
   const result = await db.query(
     `INSERT INTO pages (story_id, page_number, text) 
      VALUES ($1, $2, $3) RETURNING *`,
     [storyId, pageNumber, text]
+  );
+  return result.rows[0];
+}
+
+// update page text or number
+export async function updatePage(pageId, fields) {
+  const { page_number, text } = fields;
+  const result = await db.query(
+    `UPDATE pages
+     SET page_number = COALESCE($1, page_number),
+         text = COALESCE($2, text)
+     WHERE id = $3
+     RETURNING *`,
+    [page_number, text, pageId]
+  );
+  return result.rows[0];
+}
+
+// delete page
+export async function deletePage(pageId) {
+  const result = await db.query(
+    `DELETE FROM pages WHERE id = $1 RETURNING *`,
+    [pageId]
   );
   return result.rows[0];
 }
