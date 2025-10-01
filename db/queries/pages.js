@@ -29,25 +29,25 @@ export async function createPage(storyId, pageNumber, text) {
   return result.rows[0];
 }
 
-// update page text/number
-export async function updatePage(pageId, text, pageNumber) {
+// update an existing page
+export async function updatePage(id, pageNumber, text) {
   const result = await db.query(
     `UPDATE pages
-     SET text = $1, page_number = $2
+     SET page_number = $1, text = $2
      WHERE id = $3
      RETURNING *`,
-    [text, pageNumber, pageId]
+    [pageNumber, text, id]   // ✅ correct order
   );
   return result.rows[0];
 }
 
-// delete page
-export async function deletePage(pageId) {
+// delete a page
+export async function deletePage(id) {
   const result = await db.query(
     `DELETE FROM pages
      WHERE id = $1
      RETURNING *`,
-    [pageId]
+    [id]
   );
   return result.rows[0];
 }
