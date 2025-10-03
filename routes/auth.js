@@ -1,12 +1,12 @@
 // routes/auth.js
 import { Router } from "express";
-import { createUser, getUserByUsername } from "../db/queries/users.js";
-import { signToken } from "../utils/jwt.js";
-import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { createUser, authenticateUser } from "../db/queries/users.js";
+import { getUserById } from "../db/queries/users.js";
 
 const router = Router();
 
-/** POST /auth/signup - create user + return token */
+// POST /auth/signup → create a new user + return token
 router.post("/signup", async (req, res, next) => {
   try {
     const { username, password } = req.body;
@@ -14,29 +14,58 @@ router.post("/signup", async (req, res, next) => {
       return res.status(400).json({ error: "username and password required" });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await createUser(username, hashed);
+    // save new user in db
+    const user = await createUser(username, password);
 
-    const token = signToken({ id: user.id });
+    // sign a JWT with their id
+    const token = jwt.sign(
+      { id: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" } // 7 days feels reasonable for demo
+    );
+
+    res.status(201).json({ user, token });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /auth/login → authenticate existing user
+router.post("/login", async (req, res, next) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: "username and password required" });
+    }
+
+    // check credentials (this handles fetching + bcrypt compare)
+    const user = await authenticateUser(username, password);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    // issue a token just like signup
+    const token = jwt.sign(
+      { id: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
     res.json({ user, token });
   } catch (err) {
     next(err);
   }
 });
 
-/** POST /auth/login - verify user + return token */
-router.post("/login", async (req, res, next) => {
+// GET /auth/me → return current logged-in user (based on token)
+router.get("/me", async (req, res, next) => {
   try {
-    const { username, password } = req.body;
-    const user = await getUserByUsername(username);
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
-
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
-
-    const token = signToken({ id: user.id });
-    res.json({ user, token });
+    const user = await getUserById(req.user.id);
+    res.json(user);
   } catch (err) {
     next(err);
   }
