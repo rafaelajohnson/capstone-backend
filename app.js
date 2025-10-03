@@ -1,33 +1,27 @@
-// app.js
+
 import express from "express";
-import cors from "cors"; // lets our frontend (different port) talk to backend
-import usersRoutes from "./api/users.js";
-import storiesRoutes from "./api/stories.js";
-import pagesRoutes from "./api/pages.js";
-import optionsRoutes from "./api/options.js";
+import cors from "cors";
+
+import authRoutes from "./routes/auth.js";
+import storiesRoutes from "./routes/stories.js";
+import { attachUser } from "./middleware/attachUser.js"; // 👈 import
 
 const app = express();
 
-// enable CORS so frontend (localhost:5173) can access backend (localhost:3000)
-app.use(
-  cors({
-    origin: "http://localhost:5173", // frontend URL
-    credentials: true, // allows cookies/headers if we need them later
-  })
-);
-
-// parse JSON bodies from incoming requests
+app.use(cors());
 app.use(express.json());
 
-// mount routes for different parts of the app
-app.use("/auth", usersRoutes); // signup + login
-app.use("/stories", storiesRoutes); // save + get stories
-app.use("/pages", pagesRoutes); // get page + options
-app.use("/options", optionsRoutes); // add/fetch options
+// Attach req.user if token is valid
+app.use(attachUser);
 
-// quick health check so I know server is alive
-app.get("/", (req, res) => {
-  res.send("API is running");
+// Routes
+app.use("/auth", authRoutes);
+app.use("/stories", storiesRoutes);
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("Server error:", err);
+  res.status(500).json({ error: "Internal server error" });
 });
 
 export default app;
