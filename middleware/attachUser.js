@@ -1,19 +1,28 @@
 // middleware/attachUser.js
+// This middleware checks for a JWT in the Authorization header
+// If the token is valid, it decodes it and attaches the user info to req.user
+// Otherwise, it just moves on (req.user will remain undefined)
+
 import jwt from "jsonwebtoken";
 
 export function attachUser(req, res, next) {
-  const auth = req.headers.authorization;
+  // Grab the Authorization header (should look like "Bearer <token>")
+  const authHeader = req.headers.authorization;
 
-  if (auth && auth.startsWith("Bearer ")) {
-    const token = auth.slice(7); // remove "Bearer "
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7); // remove the "Bearer " part
     try {
-      // Decode and verify token using your secret
+      // Verify the token with the secret key (must match the one used in login/register)
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded; // attach user info to request
+
+      // Attach the decoded payload (usually { id, iat, exp }) to req.user
+      req.user = decoded;
     } catch (err) {
-      console.error("JWT verification failed:", err.message);
+      // If token is invalid or expired, log the reason (but don't crash)
+      console.error("❌ JWT verification failed:", err.message);
     }
   }
 
+  // Always move on to the next middleware or route
   next();
 }
