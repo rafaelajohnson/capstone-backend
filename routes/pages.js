@@ -10,17 +10,7 @@ import {
 
 const router = express.Router();
 
-// Get pages for a story
-router.get("/:storyId/pages", requireUser, async (req, res, next) => {
-  try {
-    const pages = await getPagesByStory(req.params.storyId);
-    res.json(pages);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Create page
+// Create a new page
 router.post("/", requireUser, async (req, res, next) => {
   try {
     const { storyId, page_number, text } = req.body;
@@ -34,24 +24,35 @@ router.post("/", requireUser, async (req, res, next) => {
   }
 });
 
-// Update page
-router.put("/:id", requireUser, async (req, res, next) => {
+// Get all pages for a story
+router.get("/:storyId", requireUser, async (req, res, next) => {
   try {
+    const { storyId } = req.params;
+    const pages = await getPagesByStory(storyId);
+    res.json(pages);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Update a page
+router.put("/:pageId", requireUser, async (req, res, next) => {
+  try {
+    const { pageId } = req.params;
     const { text } = req.body;
-    const updated = await updatePage(req.params.id, text);
-    if (!updated) return res.status(404).json({ error: "Page not found" });
+    const updated = await updatePage(pageId, text);
     res.json(updated);
   } catch (err) {
     next(err);
   }
 });
 
-// Delete page
-router.delete("/:id", requireUser, async (req, res, next) => {
+// Delete a page
+router.delete("/:pageId", requireUser, async (req, res, next) => {
   try {
-    const deleted = await deletePage(req.params.id);
-    if (!deleted) return res.status(404).json({ error: "Page not found" });
-    res.json({ message: "Page deleted" });
+    const { pageId } = req.params;
+    const deleted = await deletePage(pageId);
+    res.json(deleted);
   } catch (err) {
     next(err);
   }

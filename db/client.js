@@ -1,12 +1,12 @@
-import 'dotenv/config';
+// db/client.js
 import pg from "pg";
+import dotenv from "dotenv";
 
-const options = { connectionString: process.env.DATABASE_URL };
+dotenv.config();
+const { Pool } = pg;
 
-// Need SSL for external database connection
-if (process.env.NODE_ENV === "production") {
-  options.ssl = { rejectUnauthorized: false };
-}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-const db = new pg.Client(options);
-export default db;
+export default pool;
