@@ -4,21 +4,24 @@ import bcrypt from "bcrypt";
 
 // Create a new user
 export async function createUser(username, password) {
+  console.log("🧂 creating user:", username);
   const hashedPassword = await bcrypt.hash(password, 10);
+  console.log("🔑 password hashed");
 
   const sql = `
     INSERT INTO users (username, password)
     VALUES ($1, $2)
     RETURNING id, username;
   `;
-
+  console.log("📡 running SQL...");
   const {
     rows: [user],
   } = await db.query(sql, [username, hashedPassword]);
+  console.log("✅ user created in DB:", user);
 
-  // return safe object (no password field)
   return { id: user.id, username: user.username };
 }
+
 
 // Authenticate user (login check)
 export async function authenticateUser(username, password) {
