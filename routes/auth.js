@@ -1,44 +1,38 @@
 // routes/auth.js
-import { Router } from "express";
+import express from "express";
+import { createUser, authenticateUser } from "../db/queries/users.js";
 import jwt from "jsonwebtoken";
-import { createUser, authenticateUser } from "#db/queries/users";
 
-const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret"; // fallback for dev
+const router = express.Router();
 
-// POST /auth/signup
+// signup
 router.post("/signup", async (req, res, next) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: "username and password required" });
     }
-
     const user = await createUser(username, password);
-
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
-
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
     res.json({ user, token });
   } catch (err) {
     next(err);
   }
 });
 
-// POST /auth/login
+// login
 router.post("/login", async (req, res, next) => {
   try {
     const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: "username and password required" });
-    }
-
     const user = await authenticateUser(username, password);
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
-
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
     res.json({ user, token });
   } catch (err) {
     next(err);
