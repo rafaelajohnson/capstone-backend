@@ -4,25 +4,31 @@
 // Otherwise, it just moves on (req.user will remain undefined)
 
 import jwt from "jsonwebtoken";
+import { getUserById } from "#db/queries/users.js";
 
-export function attachUser(req, res, next) {
-  // Grab the Authorization header (should look like "Bearer <token>")
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
+
+export async function attachUser(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7); // remove the "Bearer " part
-    try {
-      // Verify the token with the secret key (must match the one used in login/register)
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  console.log("🔑 Incoming Authorization header:", authHeader);
 
-      // Attach the decoded payload (usually { id, iat, exp }) to req.user
-      req.user = decoded;
-    } catch (err) {
-      // If token is invalid or expired, log the reason (but don't crash)
-      console.error("❌ JWT verification failed:", err.message);
-    }
+  if (!authHeader) return next();
+
+  const token = authHeader.replace("Bearer ", "").trim();
+  console.log("🪙 Extracted token:", token);
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    console.log("📦 JWT payload:", payload);
+
+    const user = await getUserById(payload.id);
+    console.log("👤 Attached user:", user);
+
+    if (user) req.user = user;
+  } catch (err) {
+    console.warn("⚠️ Invalid token:", err.message);
   }
 
-  // Always move on to the next middleware or route
   next();
 }
