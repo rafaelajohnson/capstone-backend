@@ -1,37 +1,51 @@
 // routes/pages.js
-import { Router } from "express";
-import { createPage, updatePage, deletePage, getPagesByStory } from "#db/queries/pages";
-import requireUser from "#middleware/requireUser";
+import express from "express";
+import { requireUser } from "../middleware/requireUser.js";
+import {
+  createPage,
+  updatePage,
+  deletePage,
+  getPageById,
+  getPagesByStory
+} from "#db/queries/pages";
 
-const router = Router();
+const router = express.Router();
 
 // get all pages for a story
-router.get("/:storyId", requireUser, async (req, res, next) => {
+router.get("/stories/:storyId/pages", requireUser, async (req, res, next) => {
   try {
-    const pages = await getPagesByStory(req.params.storyId);
+    const { storyId } = req.params;
+    const pages = await getPagesByStory(storyId);
     res.json(pages);
   } catch (err) {
     next(err);
   }
 });
 
-// create a new page for a story
-router.post("/", requireUser, async (req, res, next) => {
+// create a page
+router.post("/pages", requireUser, async (req, res, next) => {
   try {
     const { storyId, page_number, text } = req.body;
-    if (!storyId || !page_number || !text) {
-      return res.status(400).json({ error: "storyId, page_number, text required" });
-    }
-
     const page = await createPage(storyId, page_number, text);
-    res.status(201).json(page);
+    res.json(page);
   } catch (err) {
     next(err);
   }
 });
 
-// update page text
-router.put("/:id", requireUser, async (req, res, next) => {
+// get page by id
+router.get("/pages/:id", requireUser, async (req, res, next) => {
+  try {
+    const page = await getPageById(req.params.id);
+    if (!page) return res.status(404).json({ error: "Page not found" });
+    res.json(page);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// update page
+router.put("/pages/:id", requireUser, async (req, res, next) => {
   try {
     const { text } = req.body;
     const page = await updatePage(req.params.id, text);
@@ -42,7 +56,7 @@ router.put("/:id", requireUser, async (req, res, next) => {
 });
 
 // delete page
-router.delete("/:id", requireUser, async (req, res, next) => {
+router.delete("/pages/:id", requireUser, async (req, res, next) => {
   try {
     const deleted = await deletePage(req.params.id);
     res.json(deleted);
