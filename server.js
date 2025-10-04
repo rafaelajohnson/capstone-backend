@@ -15,11 +15,11 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-// Routes with base paths
-app.use("/auth", authRouter);
-app.use("/stories", storiesRouter);
-app.use("/pages", pagesRouter);
-app.use("/options", optionsRouter);
+// Routes with proper prefixes
+app.use("/auth", authRouter);       // signup, login
+app.use("/stories", storiesRouter); // CRUD stories
+app.use("/pages", pagesRouter);     // CRUD pages
+app.use("/options", optionsRouter); // CRUD options
 
 // Root health check
 app.get("/", (req, res) => {
