@@ -1,7 +1,7 @@
 // routes/auth.js
 import express from "express";
 import jwt from "jsonwebtoken";
-import { createUser, authenticateUser } from "#db/queries/users.js";
+import { createUser, authenticateUser } from "#db/queries/users";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
