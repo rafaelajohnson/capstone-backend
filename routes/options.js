@@ -1,17 +1,17 @@
 // routes/options.js
-import { Router } from "express";
-import { requireUser } from "../middleware/requireUser.js";
+import express from "express";
+import requireUser from "../middleware/requireUser.js";
 import {
   getOptionsByPage,
   createOption,
   updateOption,
   deleteOption,
-} from "#db/queries/options.js";
+} from "../db/queries/options.js";
 
-const router = Router();
+const router = express.Router();
 
-// GET /options/:pageId
-router.get("/:pageId", requireUser, async (req, res, next) => {
+// Get options for a page
+router.get("/:pageId/options", requireUser, async (req, res, next) => {
   try {
     const options = await getOptionsByPage(req.params.pageId);
     res.json(options);
@@ -20,33 +20,38 @@ router.get("/:pageId", requireUser, async (req, res, next) => {
   }
 });
 
-// POST /options
+// Create option
 router.post("/", requireUser, async (req, res, next) => {
   try {
     const { pageId, option_text } = req.body;
+    if (!pageId || !option_text) {
+      return res.status(400).json({ error: "pageId and option_text required" });
+    }
     const option = await createOption(pageId, option_text);
-    res.json(option);
+    res.status(201).json(option);
   } catch (err) {
     next(err);
   }
 });
 
-// PUT /options/:id
+// Update option
 router.put("/:id", requireUser, async (req, res, next) => {
   try {
     const { option_text } = req.body;
     const updated = await updateOption(req.params.id, option_text);
+    if (!updated) return res.status(404).json({ error: "Option not found" });
     res.json(updated);
   } catch (err) {
     next(err);
   }
 });
 
-// DELETE /options/:id
+// Delete option
 router.delete("/:id", requireUser, async (req, res, next) => {
   try {
     const deleted = await deleteOption(req.params.id);
-    res.json(deleted);
+    if (!deleted) return res.status(404).json({ error: "Option not found" });
+    res.json({ message: "Option deleted" });
   } catch (err) {
     next(err);
   }
