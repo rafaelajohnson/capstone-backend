@@ -1,51 +1,37 @@
-// routes/pages.js
-import express from "express";
-import { requireUser } from "../middleware/requireUser.js";
+import { Router } from "express";
 import {
   createPage,
   updatePage,
   deletePage,
-  getPageById,
-  getPagesByStory
+  getPagesByStory,
 } from "#db/queries/pages";
+import requireUser from "#middleware/requireUser";
 
-const router = express.Router();
+const router = Router();
 
 // get all pages for a story
-router.get("/stories/:storyId/pages", requireUser, async (req, res, next) => {
+router.get("/:storyId/pages", requireUser, async (req, res, next) => {
   try {
-    const { storyId } = req.params;
-    const pages = await getPagesByStory(storyId);
+    const pages = await getPagesByStory(req.params.storyId);
     res.json(pages);
   } catch (err) {
     next(err);
   }
 });
 
-// create a page
-router.post("/pages", requireUser, async (req, res, next) => {
+// create a new page
+router.post("/", requireUser, async (req, res, next) => {
   try {
     const { storyId, page_number, text } = req.body;
     const page = await createPage(storyId, page_number, text);
-    res.json(page);
+    res.status(201).json(page);
   } catch (err) {
     next(err);
   }
 });
 
-// get page by id
-router.get("/pages/:id", requireUser, async (req, res, next) => {
-  try {
-    const page = await getPageById(req.params.id);
-    if (!page) return res.status(404).json({ error: "Page not found" });
-    res.json(page);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// update page
-router.put("/pages/:id", requireUser, async (req, res, next) => {
+// update a page
+router.put("/:id", requireUser, async (req, res, next) => {
   try {
     const { text } = req.body;
     const page = await updatePage(req.params.id, text);
@@ -55,11 +41,11 @@ router.put("/pages/:id", requireUser, async (req, res, next) => {
   }
 });
 
-// delete page
-router.delete("/pages/:id", requireUser, async (req, res, next) => {
+// delete a page
+router.delete("/:id", requireUser, async (req, res, next) => {
   try {
-    const deleted = await deletePage(req.params.id);
-    res.json(deleted);
+    await deletePage(req.params.id);
+    res.json({ message: "Page deleted" });
   } catch (err) {
     next(err);
   }

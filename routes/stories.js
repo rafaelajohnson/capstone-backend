@@ -1,4 +1,3 @@
-// routes/stories.js
 import { Router } from "express";
 import {
   getStoriesByUser,
@@ -6,15 +5,14 @@ import {
   createStory,
   updateStory,
   deleteStory,
-} from "../db/queries/stories.js";
-import { createPage } from "../db/queries/pages.js";
-import { createOption } from "../db/queries/options.js";
-import requireUser from "../middleware/requireUser.js";
-import requireBody from "../middleware/requireBody.js";
+} from "#db/queries/stories";
+import { createPage } from "#db/queries/pages";
+import { createOption } from "#db/queries/options";
+import requireUser from "#middleware/requireUser";
 
 const router = Router();
 
-/** GET /stories - list all stories for logged-in user */
+// list all stories for logged in user
 router.get("/", requireUser, async (req, res, next) => {
   try {
     const stories = await getStoriesByUser(req.user.id);
@@ -24,7 +22,7 @@ router.get("/", requireUser, async (req, res, next) => {
   }
 });
 
-/** GET /stories/:id - single story */
+// get a single story by id
 router.get("/:id", requireUser, async (req, res, next) => {
   try {
     const story = await getStoryById(req.params.id);
@@ -34,7 +32,7 @@ router.get("/:id", requireUser, async (req, res, next) => {
   }
 });
 
-/** POST /stories - create full story */
+// create a new story with optional pages/options
 router.post("/", requireUser, async (req, res, next) => {
   try {
     const { title, topic, pages } = req.body;
@@ -46,7 +44,7 @@ router.post("/", requireUser, async (req, res, next) => {
 
     for (const p of pages) {
       const page = await createPage(story.id, p.page_number, p.text);
-      if (p.options) {
+      if (p.options?.length) {
         for (const opt of p.options) {
           await createOption(page.id, opt);
         }
@@ -59,8 +57,8 @@ router.post("/", requireUser, async (req, res, next) => {
   }
 });
 
-/** PUT /stories/:id - update title/topic */
-router.put("/:id", requireUser, requireBody(["title", "topic"]), async (req, res, next) => {
+// update story
+router.put("/:id", requireUser, async (req, res, next) => {
   try {
     const { title, topic } = req.body;
     const story = await updateStory(req.params.id, req.user.id, title, topic);
@@ -70,7 +68,7 @@ router.put("/:id", requireUser, requireBody(["title", "topic"]), async (req, res
   }
 });
 
-/** DELETE /stories/:id */
+// delete story
 router.delete("/:id", requireUser, async (req, res, next) => {
   try {
     await deleteStory(req.params.id, req.user.id);

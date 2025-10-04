@@ -1,21 +1,16 @@
-// routes/options.js
 import { Router } from "express";
 import {
   getOptionsByPage,
   createOption,
   updateOption,
   deleteOption,
-} from "../db/queries/options.js";
-import requireUser from "../middleware/requireUser.js";
-import requireBody from "../middleware/requireBody.js";
+} from "#db/queries/options";
+import requireUser from "#middleware/requireUser";
 
 const router = Router();
 
-/**
- * GET /options/page/:pageId
- * Get all options for a given page (requires login)
- */
-router.get("/page/:pageId", requireUser, async (req, res, next) => {
+// get options for a page
+router.get("/:pageId", requireUser, async (req, res, next) => {
   try {
     const options = await getOptionsByPage(req.params.pageId);
     res.json(options);
@@ -24,55 +19,33 @@ router.get("/page/:pageId", requireUser, async (req, res, next) => {
   }
 });
 
-/**
- * POST /options/page/:pageId
- * Add a new option to a page
- * Body: { option_text: string }
- */
-router.post(
-  "/page/:pageId",
-  requireUser,
-  requireBody(["option_text"]),
-  async (req, res, next) => {
-    try {
-      const option = await createOption(
-        req.params.pageId,
-        req.body.option_text
-      );
-      res.status(201).json(option);
-    } catch (err) {
-      next(err);
-    }
+// create an option
+router.post("/", requireUser, async (req, res, next) => {
+  try {
+    const { pageId, option_text } = req.body;
+    const option = await createOption(pageId, option_text);
+    res.status(201).json(option);
+  } catch (err) {
+    next(err);
   }
-);
+});
 
-/**
- * PUT /options/:id
- * Update option text
- * Body: { option_text: string }
- */
-router.put(
-  "/:id",
-  requireUser,
-  requireBody(["option_text"]),
-  async (req, res, next) => {
-    try {
-      const option = await updateOption(req.params.id, req.body.option_text);
-      res.json(option);
-    } catch (err) {
-      next(err);
-    }
+// update option
+router.put("/:id", requireUser, async (req, res, next) => {
+  try {
+    const { option_text } = req.body;
+    const option = await updateOption(req.params.id, option_text);
+    res.json(option);
+  } catch (err) {
+    next(err);
   }
-);
+});
 
-/**
- * DELETE /options/:id
- * Delete option by id
- */
+// delete option
 router.delete("/:id", requireUser, async (req, res, next) => {
   try {
-    const deleted = await deleteOption(req.params.id);
-    res.json(deleted);
+    await deleteOption(req.params.id);
+    res.json({ message: "Option deleted" });
   } catch (err) {
     next(err);
   }
