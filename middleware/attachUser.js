@@ -3,31 +3,35 @@
 // If the token is valid, it decodes it and attaches the user info to req.user
 // Otherwise, it just moves on (req.user will remain undefined)
 
+// middleware/attachUser.js
 import jwt from "jsonwebtoken";
 import { getUserById } from "#db/queries/users.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 export async function attachUser(req, res, next) {
-  const authHeader = req.headers.authorization;
+  const auth = req.headers.authorization;
+  console.log("🔑 Incoming auth header:", auth);
 
-  console.log("🔑 Incoming Authorization header:", authHeader);
+  if (auth && auth.startsWith("Bearer ")) {
+    const token = auth.split(" ")[1];
+    try {
+      const payload = jwt.verify(token, JWT_SECRET);
+      console.log("✅ Decoded payload:", payload);
 
-  if (!authHeader) return next();
+      const user = await getUserById(payload.id);
+      console.log("👤 User from DB:", user);
 
-  const token = authHeader.replace("Bearer ", "").trim();
-  console.log("🪙 Extracted token:", token);
-
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    console.log("📦 JWT payload:", payload);
-
-    const user = await getUserById(payload.id);
-    console.log("👤 Attached user:", user);
-
-    if (user) req.user = user;
-  } catch (err) {
-    console.warn("⚠️ Invalid token:", err.message);
+      if (user) {
+        req.user = user;
+      } else {
+        console.warn("⚠️ No user found for id:", payload.id);
+      }
+    } catch (err) {
+      console.error("❌ Token verification failed:", err.message);
+    }
+  } else {
+    console.warn("⚠️ No Authorization header or wrong format");
   }
 
   next();
