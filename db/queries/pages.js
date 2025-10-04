@@ -1,5 +1,5 @@
 // db/queries/pages.js
-import db from "#db/client.js";
+import db from "#db/client";
 
 // create a page
 export async function createPage(storyId, pageNumber, text) {
