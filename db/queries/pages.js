@@ -1,53 +1,60 @@
-// db/queries/pages.js
-import db from "#db/client";
+// routes/pages.js
+import { Router } from "express";
+import { createPage, updatePage, deletePage, getPageById } from "#db/queries/pages";
+import { getOptionsByPage } from "#db/queries/options";
+import requireUser from "#middleware/requireUser";
+import requireBody from "#middleware/requireBody";
 
-// get all pages for a story
-export async function getPagesByStory(storyId) {
-  const result = await db.query(
-    `SELECT * FROM pages WHERE story_id = $1 ORDER BY page_number ASC`,
-    [storyId]
-  );
-  return result.rows;
-}
+const router = Router();
 
-// get one page (with text)
-export async function getPageById(pageId) {
-  const result = await db.query(
-    `SELECT * FROM pages WHERE id = $1`,
-    [pageId]
-  );
-  return result.rows[0];
-}
+// get a page by id, including its options
+router.get("/:id", requireUser, async (req, res, next) => {
+  try {
+    const page = await getPageById(req.params.id);
+    if (!page) return res.status(404).json({ error: "Page not found" });
 
-// make a new page
-export async function createPage(storyId, pageNumber, text) {
-  const result = await db.query(
-    `INSERT INTO pages (story_id, page_number, text) 
-     VALUES ($1, $2, $3) RETURNING *`,
-    [storyId, pageNumber, text]
-  );
-  return result.rows[0];
-}
+    const options = await getOptionsByPage(page.id);
+    res.json({ ...page, options });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// create a new page for a story
+router.post(
+  "/story/:storyId",
+  requireUser,
+  requireBody(["page_number", "text"]),
+  async (req, res, next) => {
+    try {
+      const { page_number, text } = req.body;
+      const page = await createPage(req.params.storyId, page_number, text);
+      res.status(201).json(page);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // update an existing page
-export async function updatePage(id, pageNumber, text) {
-  const result = await db.query(
-    `UPDATE pages
-     SET page_number = $1, text = $2
-     WHERE id = $3
-     RETURNING *`,
-    [pageNumber, text, id]   // ✅ correct order
-  );
-  return result.rows[0];
-}
+router.put("/:id", requireUser, requireBody(["text"]), async (req, res, next) => {
+  try {
+    const { text } = req.body;
+    const page = await updatePage(req.params.id, text);
+    res.json(page);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // delete a page
-export async function deletePage(id) {
-  const result = await db.query(
-    `DELETE FROM pages
-     WHERE id = $1
-     RETURNING *`,
-    [id]
-  );
-  return result.rows[0];
-}
+router.delete("/:id", requireUser, async (req, res, next) => {
+  try {
+    const page = await deletePage(req.params.id);
+    res.json(page);
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
