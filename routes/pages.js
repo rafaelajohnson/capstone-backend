@@ -1,43 +1,37 @@
 // routes/pages.js
 import { Router } from "express";
-import { createPage, updatePage, deletePage, getPageById } from "#db/queries/pages";
-import { getOptionsByPage } from "#db/queries/options";
-import requireUser from "#middleware/requireUser";
-import requireBody from "#middleware/requireBody";
+import { createPage, updatePage, deletePage, getPagesByStory } from "#db/queries/pages";
+import requireUser from "#middleware/requireUser.js";
 
 const router = Router();
 
-// get a page by id, including its options
-router.get("/:id", requireUser, async (req, res, next) => {
+// get all pages for a story
+router.get("/:storyId", requireUser, async (req, res, next) => {
   try {
-    const page = await getPageById(req.params.id);
-    if (!page) return res.status(404).json({ error: "Page not found" });
-
-    const options = await getOptionsByPage(page.id);
-    res.json({ ...page, options });
+    const pages = await getPagesByStory(req.params.storyId);
+    res.json(pages);
   } catch (err) {
     next(err);
   }
 });
 
 // create a new page for a story
-router.post(
-  "/story/:storyId",
-  requireUser,
-  requireBody(["page_number", "text"]),
-  async (req, res, next) => {
-    try {
-      const { page_number, text } = req.body;
-      const page = await createPage(req.params.storyId, page_number, text);
-      res.status(201).json(page);
-    } catch (err) {
-      next(err);
+router.post("/", requireUser, async (req, res, next) => {
+  try {
+    const { storyId, page_number, text } = req.body;
+    if (!storyId || !page_number || !text) {
+      return res.status(400).json({ error: "storyId, page_number, text required" });
     }
-  }
-);
 
-// update an existing page
-router.put("/:id", requireUser, requireBody(["text"]), async (req, res, next) => {
+    const page = await createPage(storyId, page_number, text);
+    res.status(201).json(page);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// update page text
+router.put("/:id", requireUser, async (req, res, next) => {
   try {
     const { text } = req.body;
     const page = await updatePage(req.params.id, text);
@@ -47,11 +41,11 @@ router.put("/:id", requireUser, requireBody(["text"]), async (req, res, next) =>
   }
 });
 
-// delete a page
+// delete page
 router.delete("/:id", requireUser, async (req, res, next) => {
   try {
-    const page = await deletePage(req.params.id);
-    res.json(page);
+    const deleted = await deletePage(req.params.id);
+    res.json(deleted);
   } catch (err) {
     next(err);
   }
