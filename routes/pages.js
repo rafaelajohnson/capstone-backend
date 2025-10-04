@@ -1,7 +1,7 @@
 // routes/pages.js
 import { Router } from "express";
 import { createPage, updatePage, deletePage, getPagesByStory } from "#db/queries/pages";
-import requireUser from "#middleware/requireUser.js";
+import requireUser from "#middleware/requireUser";
 
 const router = Router();
 
