@@ -4,15 +4,6 @@ tracer.init({
   logInjection: true,
   runtimeMetrics: true,
 });
-const tracer = require('dd-trace').init({
-  profiling: true,
-  env: 'sandbox',
-  service: 'node-app',
-  version: 'v5.3',
-  logInjection: true,
-  runtimeMetrics: true,
-});
-
 tracer.use('express', {
 hooks: {
   request: (span, req, res) => {
