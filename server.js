@@ -1,32 +1,23 @@
 // server.js
-import 'dotenv/config'; // still fine to keep for local dev
+import 'dotenv/config';
 import tracer from 'dd-trace';
-import express from 'express';
-import cors from 'cors';
-import morgan from 'morgan';
 import winston from 'winston';
 import DatadogWinston from 'datadog-winston';
+import morgan from 'morgan';
+import app from './app.js'; // 👈 import your main app
 
-import authRouter from './routes/auth.js';
-import storiesRouter from './routes/stories.js';
-import pagesRouter from './routes/pages.js';
-import optionsRouter from './routes/options.js';
-
-// Initialize tracer FIRST, before anything else
+// --- Initialize Datadog tracer FIRST ---
 tracer.init({
   env: process.env.DD_ENV || 'production',
   service: process.env.DD_SERVICE || 'storybook-builder-api',
-  hostname: process.env.DD_AGENT_HOST, // optional
-  logInjection: true,                  // lets Datadog link logs ↔ traces
+  hostname: process.env.DD_AGENT_HOST,
+  logInjection: true,
   runtimeMetrics: true,
 });
 tracer.use('express');
 tracer.use('pg');
 
-// Now start Express
-const app = express();
-
-// Datadog logger setup
+// --- Datadog logger setup ---
 const logger = winston.createLogger({
   transports: [
     new DatadogWinston({
@@ -39,29 +30,21 @@ const logger = winston.createLogger({
   ],
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// --- Middleware logging ---
 app.use(morgan('dev'));
 
-// Routes
-app.use('/auth', authRouter);
-app.use('/stories', storiesRouter);
-app.use('/pages', pagesRouter);
-app.use('/options', optionsRouter);
-
-// Root health check
+// --- Health check ---
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Capstone backend is running' });
 });
 
-// Error handler
+// --- Error handler ---
 app.use((err, req, res, next) => {
   logger.error('❌ Server error:', err);
   res.status(500).json({ error: err.message || 'Internal server error' });
 });
 
-// Start server
+// --- Start server ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   logger.info(`🚀 Server listening on port ${PORT}`);
