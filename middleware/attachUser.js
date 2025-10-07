@@ -5,7 +5,7 @@
 
 // middleware/attachUser.js
 import jwt from "jsonwebtoken";
-import { getUserById } from "#db/queries/users.js";
+import { getUserById } from "#db/queries/users";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
