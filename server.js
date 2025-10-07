@@ -1,15 +1,28 @@
 // Initialize Datadog APM tracing before anything else
+// server.js
 import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
 import tracer from 'dd-trace';
-tracer.init({
-  logInjection: true,
-  runtimeMetrics: true,
-});
+
+// Only init tracer if we’re not already instrumented
+if (!tracer._tracer) {
+  tracer.init({
+    env: process.env.DD_ENV || 'production',
+    service: process.env.DD_SERVICE || 'storybook-builder-api',
+    hostname: process.env.DD_AGENT_HOST,
+  });
+  tracer.use('express', { service: process.env.DD_SERVICE });
+  tracer.use('pg');
+  tracer.use('http');
+  tracer.use('fs');
+  tracer.use('dns');
+  tracer.use('net');
+}
+
 
 // server.js
-import express from "express";
-import cors from "cors";
-import morgan from "morgan";
 import winston from "winston";
 import DatadogWinston from "datadog-winston";
 
