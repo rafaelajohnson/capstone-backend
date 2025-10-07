@@ -1,21 +1,11 @@
 // Initialize Datadog APM tracing before anything else
-import tracer from "dd-trace";
+import 'dotenv/config';
+import tracer from 'dd-trace';
 tracer.init({
   logInjection: true,
   runtimeMetrics: true,
 });
-tracer.use('express', {
-hooks: {
-  request: (span, req, res) => {
-    span.setTag('custom.tag', 'example1')
-  }
-},
-validateStatus: function (code) {
-  if (code < 300) {
-    return true
-  }
-}
-});
+
 // server.js
 import express from "express";
 import cors from "cors";
