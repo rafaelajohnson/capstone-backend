@@ -1,7 +1,16 @@
+// Initialize Datadog APM tracing before anything else
+import tracer from "dd-trace";
+tracer.init({
+  logInjection: true,
+  runtimeMetrics: true,
+});
+
 // server.js
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import winston from "winston";
+import DatadogWinston from "datadog-winston";
 
 import authRouter from "./routes/auth.js";
 import storiesRouter from "./routes/stories.js";
@@ -9,6 +18,19 @@ import pagesRouter from "./routes/pages.js";
 import optionsRouter from "./routes/options.js";
 
 const app = express();
+
+// Datadog logger setup
+const logger = winston.createLogger({
+  transports: [
+    new DatadogWinston({
+      apiKey: process.env.DD_API_KEY,
+      hostname: "render",
+      service: "storybook-builder-api",
+      ddsource: "nodejs",
+      ddtags: "env:production,project:storybook-builder",
+    }),
+  ],
+});
 
 // Middleware
 app.use(cors());
@@ -28,12 +50,12 @@ app.get("/", (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error("❌ Server error:", err);
+  logger.error("❌ Server error:", err);
   res.status(500).json({ error: err.message || "Internal server error" });
 });
 
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server listening on http://localhost:${PORT}`);
+  logger.info(`🚀 Server listening on http://localhost:${PORT}`);
 });
